@@ -32,6 +32,6 @@ alert('Nem megfelelő email cím vagy jelszó!');
  }
 
  routerRegistration(){
-  this.router.navigate(['/registrate']);
+  this.router.navigate(['/registration']);
  }
 }

@@ -6,6 +6,14 @@
   <main>
     <aside class="notes-list">
       <h1>Jegyzetek</h1>
+
+      <div class="add-list">
+        <input [(ngModel)]="newList" placeholder="Új lista neve..." />
+        <button mat-mini-fab color="primary" (click)="addList()">
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+
       <mat-list role="list">
         <mat-list-item
           role="listitem"
@@ -14,6 +22,9 @@
           [class.active]="selectedList?.id === list.id"
         >
           {{ list.name }}
+          <button mat-icon-button color="warn" (click)="deleteList(list); $event.stopPropagation();">
+            <mat-icon>delete</mat-icon>
+          </button>
         </mat-list-item>
       </mat-list>
     </aside>

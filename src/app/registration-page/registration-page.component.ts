@@ -14,23 +14,23 @@ import { FormsModule } from '@angular/forms';
   styleUrl: './registration-page.component.scss',
 })
 export class RegistrationPage {
-email = '';
-password='';
+  email = '';
+  password = '';
 
   constructor(private router: Router, private auth: AuthService) {}
 
-async registration(){
-  try{
-    await this.auth.registration(this.email, this.password);
-    alert('Sikeres regisztráció!');
-    this.router.navigate(['/login']);
-  }catch(err){
-    console.error(err);
-    alert('Hiba a regisztráció során!')
+  async registration() {
+    try {
+      await this.auth.registration(this.email, this.password);
+      alert('Sikeres regisztráció!');
+      this.router.navigate(['/login']);
+    } catch (err) {
+      console.error(err);
+      alert('Hiba a regisztráció során!');
+    }
   }
-}
 
-routerLogin(){
-   this.router.navigate(['/login']);
-}
+  routerLogin() {
+    this.router.navigate(['/login']);
+  }
 }
