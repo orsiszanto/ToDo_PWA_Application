@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-landing-page',
+  standalone: true,
   imports: [ MatButtonModule],
   templateUrl: './landing-page.component.html',
   styleUrls: ['./landing-page.component.scss']
@@ -15,9 +16,7 @@ export class LandingPage {
   routerLogin(){
     this.router.navigate(['/login']);
   }
-  routerRegistrate(){
-    this.router.navigate(['/registrate'])
+  routerRegistration(){
+    this.router.navigate(['/registration'])
   }
-  
-
 }

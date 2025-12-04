@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-registration-page',
+  standalone: true,
   imports: [MatButtonModule, MatFormField, MatInputModule, FormsModule],
   templateUrl: './registration-page.component.html',
   styleUrl: './registration-page.component.scss',

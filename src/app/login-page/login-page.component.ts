@@ -11,6 +11,7 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-login-page',
+  standalone: true,
   imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule],
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.scss',

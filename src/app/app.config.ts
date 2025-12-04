@@ -4,12 +4,12 @@ import {
   isDevMode,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
-
 import { routes } from './app.routes';
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { provideServiceWorker } from '@angular/service-worker';
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAGo1TY-IJznUAU05G6X6sGqnS36eWkpyY",
