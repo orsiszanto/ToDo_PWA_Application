@@ -1,0 +1,49 @@
+.page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+main {
+  display: flex;
+  flex: 1;
+  padding: 1.5rem;
+  gap: 2rem;
+}
+
+.notes-list {
+  width: 250px;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.note-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 2rem;
+  background-color: #fafafa;
+}
+
+h1 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+mat-list-item {
+  cursor: pointer;
+  transition: background-color 0.2s;
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+}

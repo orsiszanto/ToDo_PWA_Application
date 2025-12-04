@@ -1,0 +1,47 @@
+<div class="page-container">
+  <header>
+    <button mat-button color="primary" (click)="logout()">Kijelentkezés</button>
+  </header>
+
+  <main>
+    <aside class="notes-list">
+      <h1>Jegyzetek</h1>
+      <mat-list role="list">
+        <mat-list-item
+          role="listitem"
+          *ngFor="let list of todoLists"
+          (click)="selectList(list)"
+          [class.active]="selectedList?.id === list.id"
+        >
+          {{ list.name }}
+        </mat-list-item>
+      </mat-list>
+    </aside>
+
+    <section class="note-content">
+      <ng-container *ngIf="selectedList; else noSelection">
+        <h2>{{ selectedList.name }}</h2>
+
+        <div class="add-todo">
+          <input [(ngModel)]="newTodo" placeholder="Új teendő..." />
+          <button mat-raised-button color="primary" (click)="addTodo()">Hozzáadás</button>
+        </div>
+
+        <mat-list class="todo-list">
+          <mat-list-item *ngFor="let todo of todos" class="todo-item">
+            <mat-checkbox [checked]="todo.completed" (change)="toggleCompletion(todo)">
+              {{ todo.title }}
+            </mat-checkbox>
+            <button mat-icon-button color="warn" (click)="deleteTodo(todo.id)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </mat-list-item>
+        </mat-list>
+      </ng-container>
+
+      <ng-template #noSelection>
+        <p>Válassz ki egy jegyzetet a bal oldalon!</p>
+      </ng-template>
+    </section>
+  </main>
+</div>
