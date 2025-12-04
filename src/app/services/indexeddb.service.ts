@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, filter, map, take, switchMap } from 'rxjs';
 
 export interface Todo {
   id?: number;
-  listId: number; // a lista id-je, amihez tartozik
+  listId: number;
   title: string;
   completed: boolean;
 }
@@ -18,6 +18,7 @@ export interface TodoList {
 })
 export class IndexedDBService {
   private db!: IDBDatabase;
+  private dbReady$ = new BehaviorSubject<boolean>(false);
 
   private readonly todoStore = 'todos';
   private readonly listStore = 'todoLists';
@@ -34,11 +35,9 @@ export class IndexedDBService {
 
     request.onupgradeneeded = (event: any) => {
       const db: IDBDatabase = event.target.result;
-
       if (!db.objectStoreNames.contains(this.listStore)) {
         db.createObjectStore(this.listStore, { keyPath: 'id', autoIncrement: true });
       }
-
       if (!db.objectStoreNames.contains(this.todoStore)) {
         const store = db.createObjectStore(this.todoStore, { keyPath: 'id', autoIncrement: true });
         store.createIndex('listIdIndex', 'listId', { unique: false });
@@ -47,155 +46,189 @@ export class IndexedDBService {
 
     request.onsuccess = (event: any) => {
       this.db = event.target.result;
-      this.loadLists();
-      this.loadTodos();
+      this.loadLists().subscribe();
+      this.loadTodos().subscribe();
+      this.dbReady$.next(true);
     };
 
-    request.onerror = (event: any) => {
-      console.error('Database error:', event);
-    };
+    request.onerror = (event: any) => console.error('Database error:', event);
+  }
+
+  private getDB(): Observable<IDBDatabase> {
+    return this.dbReady$.pipe(
+      filter(ready => ready),
+      take(1),
+      map(() => this.db)
+    );
   }
 
   // ----------------------
   // LIST CRUD
   // ----------------------
+  addList(list: TodoList): Observable<number> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<number>(observer => {
+        const tr = db.transaction(this.listStore, 'readwrite');
+        const store = tr.objectStore(this.listStore);
+        const req = store.add(list);
 
-  async addList(list: TodoList): Promise<number> {
-    const tr = this.db.transaction(this.listStore, 'readwrite');
-    const store = tr.objectStore(this.listStore);
-
-    const id = await new Promise<number>((resolve, reject) => {
-      const request = store.add(list);
-      request.onsuccess = () => resolve(request.result as number);
-      request.onerror = () => reject(request.error);
-    });
-
-    this.loadLists();
-    return id;
+        req.onsuccess = () => {
+          observer.next(req.result as number);
+          observer.complete();
+          this.loadLists().subscribe(); // frissítjük a listákat
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
-  async getAllLists(): Promise<TodoList[]> {
-    const tr = this.db.transaction(this.listStore, 'readonly');
-    const store = tr.objectStore(this.listStore);
+  updateList(list: TodoList): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        const tr = db.transaction(this.listStore, 'readwrite');
+        const store = tr.objectStore(this.listStore);
+        const req = store.put(list);
 
-    return new Promise((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+        req.onsuccess = () => {
+          this.loadLists().subscribe(() => {
+            observer.next();
+            observer.complete();
+          });
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
-  async updateList(list: TodoList) {
-    const tr = this.db.transaction(this.listStore, 'readwrite');
-    const store = tr.objectStore(this.listStore);
+  deleteList(listId: number): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        // törlés a listStore-ból
+        const trList = db.transaction(this.listStore, 'readwrite');
+        const storeList = trList.objectStore(this.listStore);
+        const reqList = storeList.delete(listId);
 
-    await new Promise<void>((resolve, reject) => {
-      const request = store.put(list);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+        reqList.onsuccess = () => {
+          // törlés a todos-ból
+          const trTodos = db.transaction(this.todoStore, 'readwrite');
+          const storeTodos = trTodos.objectStore(this.todoStore);
+          const index = storeTodos.index('listIdIndex');
 
-    this.loadLists();
+          const cursorReq = index.openCursor(IDBKeyRange.only(listId));
+          cursorReq.onsuccess = (event: any) => {
+            const cursor = event.target.result;
+            if (cursor) {
+              storeTodos.delete(cursor.primaryKey);
+              cursor.continue();
+            }
+          };
+
+          cursorReq.onerror = () => observer.error(cursorReq.error);
+
+          // frissítjük a BehaviorSubject-eket
+          this.loadLists().subscribe(() => {
+            this.loadTodos().subscribe(() => {
+              observer.next();
+              observer.complete();
+            });
+          });
+        };
+        reqList.onerror = () => observer.error(reqList.error);
+      }))
+    );
   }
 
-  async deleteList(listId: number) {
-    // Töröljük a listát
-    const trList = this.db.transaction(this.listStore, 'readwrite');
-    const storeList = trList.objectStore(this.listStore);
-    await new Promise<void>((resolve, reject) => {
-      const request = storeList.delete(listId);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-
-    // Töröljük a hozzá tartozó todos-t
-    const trTodos = this.db.transaction(this.todoStore, 'readwrite');
-    const storeTodos = trTodos.objectStore(this.todoStore);
-    const index = storeTodos.index('listIdIndex');
-
-    index.openCursor(IDBKeyRange.only(listId)).onsuccess = (event: any) => {
-      const cursor = event.target.result;
-      if (cursor) {
-        storeTodos.delete(cursor.primaryKey);
-        cursor.continue();
-      }
-    };
-
-    this.loadLists();
-    this.loadTodos();
-  }
-
-  private async loadLists() {
-    const lists = await this.getAllLists();
-    this.lists$.next(lists);
+  private loadLists(): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        const tr = db.transaction(this.listStore, 'readonly');
+        const store = tr.objectStore(this.listStore);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          this.lists$.next(req.result);
+          observer.next();
+          observer.complete();
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
   // ----------------------
   // TODO CRUD
   // ----------------------
+  addTodo(todo: Todo): Observable<number> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<number>(observer => {
+        const tr = db.transaction(this.todoStore, 'readwrite');
+        const store = tr.objectStore(this.todoStore);
+        const req = store.add(todo);
 
-  async addTodo(todo: Todo): Promise<number> {
-    const tr = this.db.transaction(this.todoStore, 'readwrite');
-    const store = tr.objectStore(this.todoStore);
-
-    const id = await new Promise<number>((resolve, reject) => {
-      const request = store.add(todo);
-      request.onsuccess = () => resolve(request.result as number);
-      request.onerror = () => reject(request.error);
-    });
-
-    this.loadTodos();
-    return id;
+        req.onsuccess = () => {
+          observer.next(req.result as number);
+          observer.complete();
+          this.loadTodos().subscribe();
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
-  async getTodosByList(listId: number): Promise<Todo[]> {
-    const tr = this.db.transaction(this.todoStore, 'readonly');
-    const store = tr.objectStore(this.todoStore);
-    const index = store.index('listIdIndex');
+  updateTodo(todo: Todo): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        const tr = db.transaction(this.todoStore, 'readwrite');
+        const store = tr.objectStore(this.todoStore);
+        const req = store.put(todo);
 
-    return new Promise((resolve, reject) => {
-      const request = index.getAll(listId);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+        req.onsuccess = () => {
+          this.loadTodos().subscribe(() => {
+            observer.next();
+            observer.complete();
+          });
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
-  async updateTodo(todo: Todo) {
-    const tr = this.db.transaction(this.todoStore, 'readwrite');
-    const store = tr.objectStore(this.todoStore);
+  deleteTodo(todoId: number): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        const tr = db.transaction(this.todoStore, 'readwrite');
+        const store = tr.objectStore(this.todoStore);
+        const req = store.delete(todoId);
 
-    await new Promise<void>((resolve, reject) => {
-      const request = store.put(todo);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-
-    this.loadTodos();
+        req.onsuccess = () => {
+          this.loadTodos().subscribe(() => {
+            observer.next();
+            observer.complete();
+          });
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 
-  async deleteTodo(todoId: number) {
-    const tr = this.db.transaction(this.todoStore, 'readwrite');
-    const store = tr.objectStore(this.todoStore);
-
-    await new Promise<void>((resolve, reject) => {
-      const request = store.delete(todoId);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-
-    this.loadTodos();
+  getTodosByList(listId: number): Observable<Todo[]> {
+    return this.todos$.pipe(
+      map(todos => todos.filter(todo => todo.listId === listId))
+    );
   }
 
-  private async loadTodos() {
-    const tr = this.db.transaction(this.todoStore, 'readonly');
-    const store = tr.objectStore(this.todoStore);
-
-    const todos: Todo[] = await new Promise((resolve, reject) => {
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-
-    this.todos$.next(todos);
+  private loadTodos(): Observable<void> {
+    return this.getDB().pipe(
+      switchMap(db => new Observable<void>(observer => {
+        const tr = db.transaction(this.todoStore, 'readonly');
+        const store = tr.objectStore(this.todoStore);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          this.todos$.next(req.result);
+          observer.next();
+          observer.complete();
+        };
+        req.onerror = () => observer.error(req.error);
+      }))
+    );
   }
 }

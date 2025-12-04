@@ -17,12 +17,16 @@
       <mat-list role="list">
         <mat-list-item
           role="listitem"
-          *ngFor="let list of todoLists"
+          *ngFor="let list of todoLists$ | async"
           (click)="selectList(list)"
           [class.active]="selectedList?.id === list.id"
         >
           {{ list.name }}
-          <button mat-icon-button color="warn" (click)="deleteList(list); $event.stopPropagation();">
+          <button
+            mat-icon-button
+            color="warn"
+            (click)="deleteList(list); $event.stopPropagation()"
+          >
             <mat-icon>delete</mat-icon>
           </button>
         </mat-list-item>
@@ -35,12 +39,17 @@
 
         <div class="add-todo">
           <input [(ngModel)]="newTodo" placeholder="Új teendő..." />
-          <button mat-raised-button color="primary" (click)="addTodo()">Hozzáadás</button>
+          <button mat-raised-button color="primary" (click)="addTodo()">
+            Hozzáadás
+          </button>
         </div>
 
         <mat-list class="todo-list">
-          <mat-list-item *ngFor="let todo of todos" class="todo-item">
-            <mat-checkbox [checked]="todo.completed" (change)="toggleCompletion(todo)">
+          <mat-list-item *ngFor="let todo of todos$ | async" class="todo-item">
+            <mat-checkbox
+              [checked]="todo.completed"
+              (change)="toggleCompletion(todo)"
+            >
               {{ todo.title }}
             </mat-checkbox>
             <button mat-icon-button color="warn" (click)="deleteTodo(todo.id)">

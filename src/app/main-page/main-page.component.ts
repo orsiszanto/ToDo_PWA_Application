@@ -1,107 +1,109 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { AuthService } from '../services/auth.service';
-import { IndexedDBService, Todo, TodoList } from '../services/indexeddb.service';
+import {
+  IndexedDBService,
+  Todo,
+  TodoList,
+} from '../services/indexeddb.service';
 import { CommonModule } from '@angular/common';
+import { Observable, map, take } from 'rxjs';
 
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
-import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatIconModule} from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-main-page',
   standalone: true,
-  imports: [CommonModule, MatListModule, MatButtonModule, FormsModule, MatCheckboxModule, MatIconModule],
+  imports: [
+    CommonModule,
+    MatListModule,
+    MatButtonModule,
+    FormsModule,
+    MatCheckboxModule,
+    MatIconModule,
+  ],
   templateUrl: './main-page.component.html',
   styleUrls: ['./main-page.component.scss'],
 })
-export class MainPage implements OnInit {
-  todoLists: TodoList[] = []; // pl. [{id: 1, name: 'Bevásárlás'}, {id: 2, name: 'Munka'}]
-  selectedList: TodoList | null=null;
-  todos: Todo[] = [];
+export class MainPage {
+  selectedList: TodoList | null = null;
+
+  // Todos csak a kiválasztott listához
+  todoLists$!: Observable<TodoList[]>;
+  todos$!: Observable<Todo[]>;
+
   newTodo = '';
   newList = '';
 
-  constructor(private indexedDBService: IndexedDBService, private auth: AuthService) {}
-
-  async ngOnInit() {
-    await this.loadLists();
+  constructor(
+    private indexedDBService: IndexedDBService,
+    private auth: AuthService
+  ) {
+    this.todoLists$ = this.indexedDBService.lists$;
+    this.todos$ = this.indexedDBService.todos$;
   }
 
-  // List
-  async loadLists(){
-    this.todoLists = await this.indexedDBService.getAllLists();
-  }
-
-  async addList(){
-    if(this.newList.trim()){
-      await this.indexedDBService.addList({name: this.newList});
-      this.newList = '';
-      await this.loadLists();
-    }
-  }
-
-  async selectList(list: TodoList) {
+  selectList(list: TodoList) {
     this.selectedList = list;
-
-    await this.loadTodos();
+    this.todos$ = this.indexedDBService.getTodosByList(list.id!);
   }
 
-  async updateListName(list: TodoList, newName: string){
-    list.name = newName;
+addList() {
+  if (!this.newList.trim()) return;
 
-    await this.indexedDBService.updateList(list);
-    await this.loadLists();
-  }
-
-  async deleteList(list: TodoList){
-    if(!list.id){
-      return;
-    }
-    await this.indexedDBService.deleteList(list.id);
-
-    if(this.selectedList?.id === list.id){
-      this.selectedList = null;
-    }
-    await this.loadLists();
-
-    this.todos=[];
-  }
-
-  //Todo
-  async loadTodos() {
-    if(!this.selectedList?.id){
-      return;
-    }
-    this.todos = await this.indexedDBService.getTodosByList(this.selectedList.id);
-  }
-
-  async addTodo() {
-    if (!this.selectedList?.id || !this.newTodo.trim()) {
-      return;
-    }
-      await this.indexedDBService.addTodo({
-        listId: this.selectedList.id,
-        title: this.newTodo,
-        completed: false,
+  this.indexedDBService.addList({ name: this.newList }).subscribe({
+    next: () => {
+      this.newList = '';
+      // azonnal kiválasztjuk az új listát
+      this.indexedDBService.lists$.pipe(take(1)).subscribe((lists: TodoList[]) => {
+        const addedList = lists[lists.length - 1];
+        this.selectList(addedList);
       });
-      this.newTodo = '';
-      await this.loadTodos();
+    },
+    error: (err) => console.error(err)
+  });
+}
+
+
+  updateListName(list: TodoList, newName: string) {
+    list.name = newName;
+    this.indexedDBService.updateList(list).subscribe();
   }
 
-  async toggleCompletion(todo: Todo) {
+  deleteList(list: TodoList) {
+    if (!list.id) return;
+    this.indexedDBService.deleteList(list.id).subscribe({
+      next: () => {
+        if (this.selectedList?.id === list.id) this.selectedList = null;
+      },
+    });
+  }
+
+addTodo() {
+  if (!this.selectedList?.id || !this.newTodo.trim()) return;
+
+  this.indexedDBService.addTodo({
+    listId: this.selectedList.id,
+    title: this.newTodo,
+    completed: false
+  }).subscribe({
+    next: () => this.newTodo = '',
+    error: (err) => console.error(err)
+  });
+}
+
+
+  toggleCompletion(todo: Todo) {
     todo.completed = !todo.completed;
-    await this.indexedDBService.updateTodo(todo);
-    await this.loadTodos();
+    this.indexedDBService.updateTodo(todo).subscribe();
   }
 
-  async deleteTodo(id?: number) {
-    if(id===undefined){
-      return;
-    }
-    await this.indexedDBService.deleteTodo(id);
-    await this.loadTodos();
+  deleteTodo(id?: number) {
+    if (!id) return;
+    this.indexedDBService.deleteTodo(id).subscribe();
   }
 
   logout() {
