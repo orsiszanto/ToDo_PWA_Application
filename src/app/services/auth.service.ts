@@ -10,6 +10,10 @@ export class AuthService {
   private auth: Auth = inject(Auth);
   private router: Router = inject(Router);
 
+  get currentUserId(): string{
+    return this.auth.currentUser?.uid || '0;'
+  }
+
   async login(email: string, password:string){
     return await signInWithEmailAndPassword(this.auth, email, password);
   }

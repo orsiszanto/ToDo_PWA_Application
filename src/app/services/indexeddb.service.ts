@@ -2,15 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, filter, map, take, switchMap } from 'rxjs';
 
 export interface Todo {
-  id?: number;
-  listId: number;
+  id: string;
   title: string;
   completed: boolean;
-}
-
-export interface TodoList {
-  id?: number;
-  name: string;
 }
 
 @Injectable({
@@ -21,10 +15,8 @@ export class IndexedDBService {
   private dbReady$ = new BehaviorSubject<boolean>(false);
 
   private readonly todoStore = 'todos';
-  private readonly listStore = 'todoLists';
 
   public readonly todos$ = new BehaviorSubject<Todo[]>([]);
-  public readonly lists$ = new BehaviorSubject<TodoList[]>([]);
 
   constructor() {
     this.initDB();
@@ -35,18 +27,14 @@ export class IndexedDBService {
 
     request.onupgradeneeded = (event: any) => {
       const db: IDBDatabase = event.target.result;
-      if (!db.objectStoreNames.contains(this.listStore)) {
-        db.createObjectStore(this.listStore, { keyPath: 'id', autoIncrement: true });
-      }
       if (!db.objectStoreNames.contains(this.todoStore)) {
-        const store = db.createObjectStore(this.todoStore, { keyPath: 'id', autoIncrement: true });
-        store.createIndex('listIdIndex', 'listId', { unique: false });
+        // nincs autoIncrement, mert string ID-t használunk
+        db.createObjectStore(this.todoStore, { keyPath: 'id' });
       }
     };
 
     request.onsuccess = (event: any) => {
       this.db = event.target.result;
-      this.loadLists().subscribe();
       this.loadTodos().subscribe();
       this.dbReady$.next(true);
     };
@@ -62,110 +50,15 @@ export class IndexedDBService {
     );
   }
 
-  // ----------------------
-  // LIST CRUD
-  // ----------------------
-  addList(list: TodoList): Observable<number> {
+  addTodo(todo: Todo): Observable<string> {
     return this.getDB().pipe(
-      switchMap(db => new Observable<number>(observer => {
-        const tr = db.transaction(this.listStore, 'readwrite');
-        const store = tr.objectStore(this.listStore);
-        const req = store.add(list);
-
-        req.onsuccess = () => {
-          observer.next(req.result as number);
-          observer.complete();
-          this.loadLists().subscribe(); // frissítjük a listákat
-        };
-        req.onerror = () => observer.error(req.error);
-      }))
-    );
-  }
-
-  updateList(list: TodoList): Observable<void> {
-    return this.getDB().pipe(
-      switchMap(db => new Observable<void>(observer => {
-        const tr = db.transaction(this.listStore, 'readwrite');
-        const store = tr.objectStore(this.listStore);
-        const req = store.put(list);
-
-        req.onsuccess = () => {
-          this.loadLists().subscribe(() => {
-            observer.next();
-            observer.complete();
-          });
-        };
-        req.onerror = () => observer.error(req.error);
-      }))
-    );
-  }
-
-  deleteList(listId: number): Observable<void> {
-    return this.getDB().pipe(
-      switchMap(db => new Observable<void>(observer => {
-        // törlés a listStore-ból
-        const trList = db.transaction(this.listStore, 'readwrite');
-        const storeList = trList.objectStore(this.listStore);
-        const reqList = storeList.delete(listId);
-
-        reqList.onsuccess = () => {
-          // törlés a todos-ból
-          const trTodos = db.transaction(this.todoStore, 'readwrite');
-          const storeTodos = trTodos.objectStore(this.todoStore);
-          const index = storeTodos.index('listIdIndex');
-
-          const cursorReq = index.openCursor(IDBKeyRange.only(listId));
-          cursorReq.onsuccess = (event: any) => {
-            const cursor = event.target.result;
-            if (cursor) {
-              storeTodos.delete(cursor.primaryKey);
-              cursor.continue();
-            }
-          };
-
-          cursorReq.onerror = () => observer.error(cursorReq.error);
-
-          // frissítjük a BehaviorSubject-eket
-          this.loadLists().subscribe(() => {
-            this.loadTodos().subscribe(() => {
-              observer.next();
-              observer.complete();
-            });
-          });
-        };
-        reqList.onerror = () => observer.error(reqList.error);
-      }))
-    );
-  }
-
-  private loadLists(): Observable<void> {
-    return this.getDB().pipe(
-      switchMap(db => new Observable<void>(observer => {
-        const tr = db.transaction(this.listStore, 'readonly');
-        const store = tr.objectStore(this.listStore);
-        const req = store.getAll();
-        req.onsuccess = () => {
-          this.lists$.next(req.result);
-          observer.next();
-          observer.complete();
-        };
-        req.onerror = () => observer.error(req.error);
-      }))
-    );
-  }
-
-  // ----------------------
-  // TODO CRUD
-  // ----------------------
-  addTodo(todo: Todo): Observable<number> {
-    return this.getDB().pipe(
-      switchMap(db => new Observable<number>(observer => {
+      switchMap(db => new Observable<string>(observer => {
         const tr = db.transaction(this.todoStore, 'readwrite');
         const store = tr.objectStore(this.todoStore);
         const req = store.add(todo);
 
         req.onsuccess = () => {
-          observer.next(req.result as number);
+          observer.next(req.result as string);
           observer.complete();
           this.loadTodos().subscribe();
         };
@@ -192,7 +85,7 @@ export class IndexedDBService {
     );
   }
 
-  deleteTodo(todoId: number): Observable<void> {
+  deleteTodo(todoId: string): Observable<void> {
     return this.getDB().pipe(
       switchMap(db => new Observable<void>(observer => {
         const tr = db.transaction(this.todoStore, 'readwrite');
@@ -207,12 +100,6 @@ export class IndexedDBService {
         };
         req.onerror = () => observer.error(req.error);
       }))
-    );
-  }
-
-  getTodosByList(listId: number): Observable<Todo[]> {
-    return this.todos$.pipe(
-      map(todos => todos.filter(todo => todo.listId === listId))
     );
   }
 

@@ -6,37 +6,9 @@
   <main>
     <aside class="notes-list">
       <h1>Jegyzetek</h1>
-
-      <div class="add-list">
-        <input [(ngModel)]="newList" placeholder="Új lista neve..." />
-        <button mat-mini-fab color="primary" (click)="addList()">
-          <mat-icon>add</mat-icon>
-        </button>
-      </div>
-
-      <mat-list role="list">
-        <mat-list-item
-          role="listitem"
-          *ngFor="let list of todoLists$ | async"
-          (click)="selectList(list)"
-          [class.active]="selectedList?.id === list.id"
-        >
-          {{ list.name }}
-          <button
-            mat-icon-button
-            color="warn"
-            (click)="deleteList(list); $event.stopPropagation()"
-          >
-            <mat-icon>delete</mat-icon>
-          </button>
-        </mat-list-item>
-      </mat-list>
     </aside>
 
     <section class="note-content">
-      <ng-container *ngIf="selectedList; else noSelection">
-        <h2>{{ selectedList.name }}</h2>
-
         <div class="add-todo">
           <input [(ngModel)]="newTodo" placeholder="Új teendő..." />
           <button mat-raised-button color="primary" (click)="addTodo()">
@@ -52,12 +24,11 @@
             >
               {{ todo.title }}
             </mat-checkbox>
-            <button mat-icon-button color="warn" (click)="deleteTodo(todo.id)">
+            <button mat-icon-button color="warn" (click)="deleteTodo(todo)">
               <mat-icon>delete</mat-icon>
             </button>
           </mat-list-item>
         </mat-list>
-      </ng-container>
 
       <ng-template #noSelection>
         <p>Válassz ki egy jegyzetet a bal oldalon!</p>

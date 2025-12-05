@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { AuthService } from '../services/auth.service';
-import {
-  IndexedDBService,
-  Todo,
-  TodoList,
-} from '../services/indexeddb.service';
+import { SyncService } from '../services/sync.service';
+import { IndexedDBService, Todo } from '../services/indexeddb.service';
+import { FirestoreService} from '../services/firestore.service';
+import { v4 as uuidv4 } from 'uuid';
+
 import { CommonModule } from '@angular/common';
-import { Observable, map, take } from 'rxjs';
+import { fromEvent, Observable } from 'rxjs';
 
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
@@ -29,81 +29,62 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./main-page.component.scss'],
 })
 export class MainPage {
-  selectedList: TodoList | null = null;
-
-  // Todos csak a kiválasztott listához
-  todoLists$!: Observable<TodoList[]>;
-  todos$!: Observable<Todo[]>;
-
+  todos$!: Observable<Todo[]>;   // minden todo egyetlen listában
   newTodo = '';
-  newList = '';
 
   constructor(
     private indexedDBService: IndexedDBService,
-    private auth: AuthService
+    private firestoreService: FirestoreService,
+    private auth: AuthService,
+    private syncService: SyncService
   ) {
-    this.todoLists$ = this.indexedDBService.lists$;
+    if(fromEvent(window, 'online')){
+      this.todos$ = this.firestoreService.getTodos();
+      return;
+    }
     this.todos$ = this.indexedDBService.todos$;
   }
 
-  selectList(list: TodoList) {
-    this.selectedList = list;
-    this.todos$ = this.indexedDBService.getTodosByList(list.id!);
-  }
+async addTodo() {
+    if (!this.newTodo.trim()) return;
+    if(fromEvent(window, 'online')){
+      let ref = await this.firestoreService.addTodo({
+        id: uuidv4(),
+        title: this.newTodo,
+        completed: false,
+      })
+      this.firestoreService.getTodos();
+      return;
+    }
 
-addList() {
-  if (!this.newList.trim()) return;
-
-  this.indexedDBService.addList({ name: this.newList }).subscribe({
-    next: () => {
-      this.newList = '';
-      // azonnal kiválasztjuk az új listát
-      this.indexedDBService.lists$.pipe(take(1)).subscribe((lists: TodoList[]) => {
-        const addedList = lists[lists.length - 1];
-        this.selectList(addedList);
-      });
-    },
-    error: (err) => console.error(err)
-  });
-}
-
-
-  updateListName(list: TodoList, newName: string) {
-    list.name = newName;
-    this.indexedDBService.updateList(list).subscribe();
-  }
-
-  deleteList(list: TodoList) {
-    if (!list.id) return;
-    this.indexedDBService.deleteList(list.id).subscribe({
-      next: () => {
-        if (this.selectedList?.id === list.id) this.selectedList = null;
-      },
+    this.syncService.addTodo({
+      id: uuidv4(),   // vagy uuidv4()
+      title: this.newTodo,
+      completed: false,
+    }).subscribe({
+      next: () => (this.newTodo = ''),
+      error: (err: any) => console.error(err),
     });
   }
 
-addTodo() {
-  if (!this.selectedList?.id || !this.newTodo.trim()) return;
-
-  this.indexedDBService.addTodo({
-    listId: this.selectedList.id,
-    title: this.newTodo,
-    completed: false
-  }).subscribe({
-    next: () => this.newTodo = '',
-    error: (err) => console.error(err)
-  });
-}
-
-
   toggleCompletion(todo: Todo) {
-    todo.completed = !todo.completed;
-    this.indexedDBService.updateTodo(todo).subscribe();
+    const updated = { ...todo, completed: !todo.completed };
+    if(fromEvent(window, 'online')){
+      this.firestoreService.updateTodo(updated)
+      return
+    }
+    this.syncService.updateTodo(updated).subscribe();
   }
 
-  deleteTodo(id?: number) {
-    if (!id) return;
-    this.indexedDBService.deleteTodo(id).subscribe();
+  deleteTodo(todo: Todo) {
+    if (!todo.id) return;
+    if(fromEvent(window, 'online')){
+      this.firestoreService.deleteTodo(todo.id)
+      return;
+    }
+    this.syncService.deleteTodo(todo).subscribe({
+      error: (err: any) => console.error(err),
+    });
   }
 
   logout() {
