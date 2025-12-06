@@ -1,13 +1,32 @@
 <div class="page-container">
   <main>
-    <section class="landing-content">
-      <h1>Üdv a TO-DO alkalmazásban!</h1>
-      <h2>Ha még nincs fiókja, regisztráljon. Ha már van, akkor jelentkezzen be!</h2>
+    <section
+      class="content"
+      fxLayout="column"
+      fxLayoutAlign="center center"
+    >
+      <mat-card class="card">
+        <mat-card-header>
+          <mat-card-title>Üdv a TO-DO alkalmazásban!</mat-card-title>
+          <mat-card-subtitle
+            >Ha még nincs fiókja, regisztráljon. Ha már van, jelentkezzen
+            be!</mat-card-subtitle
+          >
+        </mat-card-header>
 
-      <div class="button-group">
-        <button mat-raised-button color="primary" (click)="routerRegistration()">Regisztráció</button>
-        <button mat-raised-button color="accent" (click)="routerLogin()">Bejelentkezés</button>
-      </div>
+        <mat-card-actions class="button-group">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="routerRegistration()">
+            Regisztráció
+          </button>
+
+          <button mat-raised-button color="accent" (click)="routerLogin()">
+            Bejelentkezés
+          </button>
+        </mat-card-actions>
+      </mat-card>
     </section>
   </main>
 </div>

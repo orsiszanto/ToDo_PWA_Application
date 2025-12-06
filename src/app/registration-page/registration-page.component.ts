@@ -7,11 +7,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormField } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { MatCard, MatCardActions } from "@angular/material/card";
 
 @Component({
   selector: 'app-registration-page',
   standalone: true,
-  imports: [MatButtonModule, MatFormField, MatInputModule, FormsModule],
+  imports: [MatButtonModule, MatFormField, MatInputModule, FormsModule, FormsModule, MatCard, MatCardActions],
   templateUrl: './registration-page.component.html',
   styleUrl: './registration-page.component.scss',
 })

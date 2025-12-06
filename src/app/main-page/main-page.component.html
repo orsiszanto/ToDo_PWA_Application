@@ -1,21 +1,16 @@
 <div class="page-container">
-  <header>
-    <button mat-button color="primary" (click)="logout()">Kijelentkezés</button>
-  </header>
-
   <main>
-    <aside class="notes-list">
-      <h1>Jegyzetek</h1>
-    </aside>
-
-    <section class="note-content">
-        <div class="add-todo">
-          <input [(ngModel)]="newTodo" placeholder="Új teendő..." />
-          <button mat-raised-button color="primary" (click)="addTodo()">
-            Hozzáadás
-          </button>
-        </div>
-
+    <section class="content" fxLayout="column" fxLayoutAlign="center center">
+      <mat-card class="card">
+        <input [(ngModel)]="newTodo" placeholder="Új teendő..." />
+        <button
+          mat-raised-button
+          color="primary"
+          class="todo-btn"
+          (click)="addTodo()"
+        >
+          Hozzáadás
+        </button>
         <mat-list class="todo-list">
           <mat-list-item *ngFor="let todo of todos$ | async" class="todo-item">
             <mat-checkbox
@@ -29,10 +24,15 @@
             </button>
           </mat-list-item>
         </mat-list>
-
-      <ng-template #noSelection>
-        <p>Válassz ki egy jegyzetet a bal oldalon!</p>
-      </ng-template>
+      </mat-card>
+      <button
+        mat-raised-button
+        color="primary"
+        class="logout-button"
+        (click)="logout()"
+      >
+        Kijelentkezés
+      </button>
     </section>
   </main>
 </div>

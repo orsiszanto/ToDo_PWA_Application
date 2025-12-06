@@ -7,11 +7,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { FormsModule } from '@angular/forms';
+import { MatCard, MatCardActions } from "@angular/material/card";
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule],
+  imports: [MatButtonModule, MatFormFieldModule, MatInputModule, FormsModule, MatCard, MatCardActions],
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.scss',
 })

@@ -1,12 +1,15 @@
 import { Component } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
+
 import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+
 
 
 @Component({
   selector: 'app-landing-page',
   standalone: true,
-  imports: [ MatButtonModule],
+  imports: [ MatButtonModule, MatCardModule],
   templateUrl: './landing-page.component.html',
   styleUrls: ['./landing-page.component.scss']
 })
