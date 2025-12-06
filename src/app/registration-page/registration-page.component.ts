@@ -32,25 +32,16 @@ export class RegistrationPage {
       this.router.navigate(['/login']);
     } catch (err) {
       console.error(err);
-      this.registrationFailed();
+      this.onRegistrationFail();
     }
   }
-  registrationFailed() {
-    if ('Notification' in window) {
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          this.notification.requestPermission();
-          this.notification.showNotification('Sikertelen regisztráció', {
-            body: 'Helytelen email cím vagy jelszó formátum',
-            icon: '/assets/icons/error.png',
-          });
-        } else {
-          alert('Helytelen email cím vagy jelszó formátum');
-        }
-      });
-    } else {
-      alert('Helytelen email cím vagy jelszó formátum');
-    }
+
+  async onRegistrationFail() {
+    await this.notification.requestPermissionAndGetToken(); 
+    this.notification.showLocalNotification(
+      'Login failed',
+      'Helytelen felhasználónév vagy jelszó'
+    );
   }
 
   routerLogin() {

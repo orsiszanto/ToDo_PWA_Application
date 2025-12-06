@@ -31,26 +31,16 @@ export class LoginPage {
       this.router.navigate(['/main']);
     } catch (err) {
       console.error(err);
-      this.loginFailed();
+      this.onLoginFail();
     }
   }
 
-  loginFailed() {
-    if ('Notification' in window) {
-      Notification.requestPermission().then((permission) => {
-        if (permission === 'granted') {
-          this.notification.requestPermission();
-          this.notification.showNotification('Sikertelen bejelentkezés', {
-            body: 'Helytelen email cím vagy jelszó',
-            icon: '/assets/icons/error.png',
-          });
-        } else {
-          alert('Helytelen email cím vagy jelszó');
-        }
-      });
-    } else {
-      alert('Helytelen email cím vagy jelszó');
-    }
+  async onLoginFail() {
+    await this.notification.requestPermissionAndGetToken(); 
+    this.notification.showLocalNotification(
+      'Login failed',
+      'Helytelen felhasználónév vagy jelszó'
+    );
   }
 
   routerRegistration() {
