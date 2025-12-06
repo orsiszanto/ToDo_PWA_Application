@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { NotificationService } from '../services/notification.service';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -18,7 +19,11 @@ export class RegistrationPage {
   email = '';
   password = '';
 
-  constructor(private router: Router, private auth: AuthService) {}
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+    private notification: NotificationService
+  ) {}
 
   async registration() {
     try {
@@ -27,7 +32,24 @@ export class RegistrationPage {
       this.router.navigate(['/login']);
     } catch (err) {
       console.error(err);
-      alert('Hiba a regisztráció során!');
+      this.registrationFailed();
+    }
+  }
+  registrationFailed() {
+    if ('Notification' in window) {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          this.notification.requestPermission();
+          this.notification.showNotification('Sikertelen regisztráció', {
+            body: 'Helytelen email cím vagy jelszó formátum',
+            icon: '/assets/icons/error.png',
+          });
+        } else {
+          alert('Helytelen email cím vagy jelszó formátum');
+        }
+      });
+    } else {
+      alert('Helytelen email cím vagy jelszó formátum');
     }
   }
 
