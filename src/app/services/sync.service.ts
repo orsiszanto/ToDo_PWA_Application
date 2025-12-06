@@ -15,12 +15,10 @@ export class SyncService {
     private indexedDBService: IndexedDBService
   ) {}
 
-  // 🔹 Push IndexedDB → Firestore
  PushToFirestore(userId: string) {
     this.indexedDBService.todos$.subscribe(localTodos => {
       localTodos.forEach(todo => {
         if (!todo.id) {
-          // ha nincs ID, generálunk egyet
           const newTodo: FirestoreTodo = { ...todo, id: uuidv4() };
           from(this.firestoreService.addTodo(newTodo)).subscribe();
         } else {
@@ -30,7 +28,6 @@ export class SyncService {
     });
   }
 
-  // 🔹 Add todo offline → majd sync Firestore
   addTodo(todo: LocalTodo) {
     const newTodo: LocalTodo = {
       ...todo
@@ -38,12 +35,10 @@ export class SyncService {
     return this.indexedDBService.addTodo(newTodo);
   }
 
-  // 🔹 Update todo offline → majd sync Firestore
   updateTodo(todo: LocalTodo) {
     return this.indexedDBService.updateTodo(todo);
   }
 
-  // 🔹 Delete todo offline → majd sync Firestore
   deleteTodo(todo: LocalTodo) {
     return this.indexedDBService.deleteTodo(todo.id);
   }

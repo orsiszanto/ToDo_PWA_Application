@@ -12,6 +12,7 @@ export interface Todo {
 })
 export class IndexedDBService {
   private db!: IDBDatabase;
+  
   private dbReady$ = new BehaviorSubject<boolean>(false);
 
   private readonly todoStore = 'todos';
@@ -28,7 +29,6 @@ export class IndexedDBService {
     request.onupgradeneeded = (event: any) => {
       const db: IDBDatabase = event.target.result;
       if (!db.objectStoreNames.contains(this.todoStore)) {
-        // nincs autoIncrement, mert string ID-t használunk
         db.createObjectStore(this.todoStore, { keyPath: 'id' });
       }
     };

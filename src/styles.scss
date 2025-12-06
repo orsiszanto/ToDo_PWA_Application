@@ -8,7 +8,6 @@ $primary-card-color: #fcf2fc;
 
 $box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 
-// Saját mixin a kártyához
 @mixin card-style($bg-color) {
   padding: 20px;
   text-align: center;
@@ -33,7 +32,7 @@ $box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
     max-width: 600px;
 
     .card {
-      @include card-style($primary-card-color); // mixin használata
+      @include card-style($primary-card-color); 
 
       mat-card-title {
         font-size: $primary-font-size;
@@ -59,7 +58,7 @@ $box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
           font-size: 1rem;
 
           &:hover {
-            transform: scale(1.05); // további funkció
+            transform: scale(1.05); 
             transition: transform 0.3s ease;
           }
         }
@@ -72,23 +71,14 @@ $box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
   }
 }
 
-/* Logout gomb fent, fehér szöveggel és Material look */
 .logout-button {
-  position: fixed; // mindig fent
+  position: fixed; 
   top: 10px;
   right: 10px;
   z-index: 1000;
-
-  color: #fff; // fehér szöveg
-  background-color: #1976d2; // Material primary kék
   border-radius: 4px;
-
-  &:hover {
-    background-color: #1565c0; // sötétebb hover
-  }
 }
 
-// Reszponzív
 @media (max-width: 600px) {
   .content {
     .card {

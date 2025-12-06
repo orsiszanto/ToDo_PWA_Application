@@ -37,7 +37,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
   styleUrls: ['./main-page.component.scss'],
 })
 export class MainPage {
-  todos$!: Observable<Todo[]>; // minden todo egyetlen listában
+  todos$!: Observable<Todo[]>; 
   newTodo = '';
 
   constructor(
@@ -67,7 +67,7 @@ export class MainPage {
 
     this.syncService
       .addTodo({
-        id: uuidv4(), // vagy uuidv4()
+        id: uuidv4(),
         title: this.newTodo,
         completed: false,
       })

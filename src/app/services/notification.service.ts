@@ -13,7 +13,7 @@ const firebaseConfig = {
   measurementId: 'G-PWH1NR6P03'
 };
 
-const VAPID_KEY = 'BFm9CUyfsipFBujlTv9puPmCh5epnWCwtK0_JY2QYn_ElIiPvtAQh_iucT2ULsuDAhsFZO_whIeW5RUe2ADlK18'; // Firebase Web Push VAPID key
+const VAPID_KEY = 'BFm9CUyfsipFBujlTv9puPmCh5epnWCwtK0_JY2QYn_ElIiPvtAQh_iucT2ULsuDAhsFZO_whIeW5RUe2ADlK18';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {

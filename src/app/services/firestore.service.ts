@@ -11,7 +11,7 @@ import {
 import { Observable } from 'rxjs';
 
 export interface Todo {
-  id: string;          // Firestore doc ID
+  id: string;          
   title: string;
   completed: boolean;
 }
