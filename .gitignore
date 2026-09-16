@@ -48,6 +48,13 @@ Thumbs.db
 *-debug.log
 .runtimeconfig.json
 
+# Local environment and Firebase credentials
+.env
+.env.*
+!.env.example
+serviceAccount*.json
+*firebase-adminsdk*.json
+
 # e2e
 /e2e/*.js
 /e2e/*.map
